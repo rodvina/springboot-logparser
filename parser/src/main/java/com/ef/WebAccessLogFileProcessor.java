@@ -10,6 +10,8 @@ public class WebAccessLogFileProcessor implements FileProcessor<WebAccessLogFile
 		//		calculate endDate based on duration value (hourly=+1, daily=+24)
 		//		convert threshhold to int
 		
+		//		load records to db
+		
 	}
 
 }
