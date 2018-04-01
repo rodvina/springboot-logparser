@@ -23,6 +23,20 @@ public class WebAccessLogFileRecord {
 		this.userAgent = lineArray[4];
 		
 	}
+	
+	public WebAccessLogFileRecord(String date, String ip, String request, String status, String userAgent) {
+		super();
+		this.date = date;
+		this.ip = ip;
+		this.request = request;
+		this.status = status;
+		this.userAgent = userAgent;
+	}
+
+	public WebAccessLogFileRecord() {
+		super();
+	}
+
 	public String getDate() {
 		return date;
 	}

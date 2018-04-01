@@ -5,7 +5,6 @@ import java.util.Arrays;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 public class Parser {
@@ -14,8 +13,8 @@ public class Parser {
 		SpringApplication.run(Parser.class, args);
 	}
 	
-	@Bean
-	CommandLineRunner runner(){
+//	@Bean
+	CommandLineRunner runner(FileReader<WebAccessLogFileRecord> reader, FileProcessor<WebAccessLogFileRecord> processor){
 		return args -> {
 			System.out.println("CommandLineRunner running in the Parser class...");
 			Arrays.asList(args).stream().forEach(System.out::println);
@@ -23,10 +22,16 @@ public class Parser {
 			String startDate = System.getProperty("startDate");
 			String duration = System.getProperty("duration");
 			String threshhold = System.getProperty("threshhold");
+			String accesslog = System.getProperty("accesslog");
 			
 			System.out.println("startDate="+startDate);
 			System.out.println("duration="+duration);
 			System.out.println("threshhold="+threshhold);
+			System.out.println("accesslog="+accesslog);
+			
+			System.out.println("Begin processing...");
+			processor.process(reader.readFileRecordsAndConvert(accesslog), startDate, duration, threshhold);
+			
 		};
 	}
 }
