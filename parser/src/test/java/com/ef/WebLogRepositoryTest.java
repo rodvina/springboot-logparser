@@ -1,10 +1,13 @@
 package com.ef;
 
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,6 +58,18 @@ public class WebLogRepositoryTest {
 		List<WebAccessLogFileRecord> actual = repo.findByIpAddr("192.168.234.82");
 		
 		assertThat(actual.size(), equalTo(2));
+		
+	}
+	
+	@Test
+	public void testFindIpByDateAndThreshhold() {
+		LocalDateTime start = LocalDateTime.of(2017, 1, 1, 0, 0, 20, 0);
+		LocalDateTime end = LocalDateTime.of(2017, 1, 1, 0, 0, 24, 0);
+		int threshhold = 0;
+		List<Properties> actual = repo.findIPByDateAndThreshhold(start, end, threshhold);
+		
+		assertThat(actual.size(), equalTo(2));
+		actual.stream().forEach(r -> assertThat(r.getProperty("ip"), anyOf(equalTo("192.168.234.82"), equalTo("192.168.169.194"))));
 		
 	}
 

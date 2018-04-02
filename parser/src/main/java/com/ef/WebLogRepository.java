@@ -1,6 +1,8 @@
 package com.ef;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Properties;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -17,10 +19,10 @@ public class WebLogRepository {
 	
 	private static final String SELECT_BY_IP = "SELECT LOG_DT, IP_ADDR, REQUEST, STATUS, USER_AGENT FROM dbo.WEB_LOG WHERE IP_ADDR = :ip";
 	
-	private static final String SELECT_BY_DATE_AND_THRESHHOLD = "SELECT IP_ADDR IP, count(IP_ADDR) CNT " + 
+	private static final String SELECT_BY_DATE_AND_THRESHHOLD = "SELECT IP_ADDR, count(IP_ADDR) CNT " + 
 			"	FROM dbo.WEB_LOG " + 
-			"	where LOG_DT between ':startDt' and ':endDt' " + 
-			"	group by IP " + 
+			"	where LOG_DT between :startDt and :endDt " + 
+			"	group by IP_ADDR " + 
 			"	having count(IP_ADDR) > :threshhold ";
 	
 	
@@ -38,6 +40,27 @@ public class WebLogRepository {
 		SqlParameterSource[] batch = SqlParameterSourceUtils.createBatch(recordList.toArray());
 		int[] updateCounts = jdbcTemplate.batchUpdate(INSERT, batch);
 		return updateCounts;
+		
+	}
+	
+	public List<Properties> findIPByDateAndThreshhold(LocalDateTime start, LocalDateTime end, int threshhold) {
+		MapSqlParameterSource paramSource = new MapSqlParameterSource();
+		paramSource.addValue("startDt", start);
+		paramSource.addValue("endDt", end);
+		paramSource.addValue("threshhold", threshhold);
+		
+		System.out.println("sql="+SELECT_BY_DATE_AND_THRESHHOLD);
+		
+		System.out.println("params="+paramSource.getValues());
+		
+		return jdbcTemplate.query(SELECT_BY_DATE_AND_THRESHHOLD, paramSource, (rs, rowNum) -> {
+				Properties record = new Properties();
+				record.put("ip", rs.getString("IP_ADDR"));
+				record.put("count", rs.getInt("CNT"));
+				
+				return record;
+			}
+		);
 		
 	}
 	
