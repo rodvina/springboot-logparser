@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import org.h2.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,15 +27,20 @@ public class WebAccessLogFileProcessor implements FileProcessor<WebAccessLogFile
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss");
 		LocalDateTime start = LocalDateTime.parse(startDate, formatter);
 		LocalDateTime end = this.calculateEndDt(start, duration);
-		
+		Integer threshholdValue = Integer.parseInt(threshhold);
 		// find IPs that meet date and thresshold criteria
-		List<IpAddrCountRecord> results = repo.findIPByDateAndThreshhold(start, end, Integer.parseInt(threshhold));
+		List<IpAddrCountRecord> results = repo.findIPByDateAndThreshhold(start, end, threshholdValue);
 		
 		// print results to console
 		results.stream().forEach(r -> LOGGER.info(r.getIp() + ":  " + r.getCount()));
 		
 		//TODO: if hourly 100, store to db
-		
+		if (StringUtils.equals(duration, "hourly") && threshholdValue == 100) {
+			
+			results.stream().forEach(r -> r.setComments("Hourly threshhold of 100 crossed, appearing " + r.getCount() + " times,"));
+			LOGGER.info("hourly threshhold: begin batch save of "+ results.size() + " records...");
+			repo.saveToHourly100(results);
+		}
 		//TODO: if daily 250, store to db
 		
 	}

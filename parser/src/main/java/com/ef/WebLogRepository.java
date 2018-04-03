@@ -17,9 +17,12 @@ public class WebLogRepository {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(WebLogRepository.class);
 	
-	private static final String INSERT = "INSERT INTO dbo.WEB_LOG(LOG_DT, IP_ADDR, REQUEST, STATUS, USER_AGENT) "
+	private static final String INSERT = "INSERT INTO dbo.WEB_LOG (LOG_DT, IP_ADDR, REQUEST, STATUS, USER_AGENT) "
 			+ "VALUES (:date, :ip, :request, :status, :userAgent) ";
-	
+	private static final String INSERT_HOURLY_100 = "INSERT INTO dbo.WEB_LOG_HRLY_100 (IP_ADDR, COUNT, COMMENTS) "
+			+ "VALUES (:ip, :count, :comments) ";	
+	private static final String INSERT_DAILY_250 = "INSERT INTO dbo.WEB_LOG_DLY_250 (IP_ADDR, COUNT, COMMENTS) "
+			+ "VALUES (:ip, :count, :comments) ";	
 	private static final String SELECT_BY_IP = "SELECT LOG_DT, IP_ADDR, REQUEST, STATUS, USER_AGENT FROM dbo.WEB_LOG WHERE IP_ADDR = :ip";
 	
 	private static final String SELECT_BY_DATE_AND_THRESHHOLD = "SELECT IP_ADDR, count(IP_ADDR) CNT " + 
@@ -42,6 +45,22 @@ public class WebLogRepository {
 
 		SqlParameterSource[] batch = SqlParameterSourceUtils.createBatch(recordList.toArray());
 		int[] updateCounts = jdbcTemplate.batchUpdate(INSERT, batch);
+		return updateCounts;
+		
+	}
+	
+	public int[] saveToHourly100(List<IpAddrCountRecord> recordList) {
+
+		SqlParameterSource[] batch = SqlParameterSourceUtils.createBatch(recordList.toArray());
+		int[] updateCounts = jdbcTemplate.batchUpdate(INSERT_HOURLY_100, batch);
+		return updateCounts;
+		
+	}
+	
+	public int[] saveToDaily250(List<IpAddrCountRecord> recordList) {
+
+		SqlParameterSource[] batch = SqlParameterSourceUtils.createBatch(recordList.toArray());
+		int[] updateCounts = jdbcTemplate.batchUpdate(INSERT_DAILY_250, batch);
 		return updateCounts;
 		
 	}

@@ -4,6 +4,7 @@ public class IpAddrCountRecord {
 
 	private String ip;
 	private int count;
+	private String comments;
 	
 	public String getIp() {
 		return ip;
@@ -16,5 +17,11 @@ public class IpAddrCountRecord {
 	}
 	public void setCount(int count) {
 		this.count = count;
+	}
+	public String getComments() {
+		return comments;
+	}
+	public void setComments(String comments) {
+		this.comments = comments;
 	}
 }

@@ -1,12 +1,15 @@
 package com.ef;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Encapsulates a web access log record
  * @author rodneyodvina
  *
  */
 public class WebAccessLogFileRecord {
-
+	private static final Logger LOGGER = LoggerFactory.getLogger(WebAccessLogFileRecord.class);
 	private String date;
 	private String ip;
 	private String request;
@@ -15,7 +18,7 @@ public class WebAccessLogFileRecord {
 	
 	public WebAccessLogFileRecord(String delimitedLine) {
 		super();
-		System.out.println("instantiating record..."+delimitedLine);
+		LOGGER.debug("creating record..."+delimitedLine);
 		String[] lineArray = delimitedLine.split("\\|");
 		this.date = lineArray[0];
 		this.ip = lineArray[1];
