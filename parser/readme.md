@@ -1,2 +1,2 @@
 
-java -Dduration=hourly -DstartDate=2017-01-01.13:00:00 -Dthreshold=250 -jar build/libs/parser.jar arg1 arg2
+java -Daccesslog=/Users/rodneyodvina/Developer/egit_repo/wallethub-test/parser/src/test/resources/access.log -Dduration=hourly -Dthreshhold=100 -jar build/libs/parser.jar

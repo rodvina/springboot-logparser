@@ -2,8 +2,9 @@ package com.ef;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Properties;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class WebLogRepository {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(WebLogRepository.class);
+	
 	private static final String INSERT = "INSERT INTO dbo.WEB_LOG(LOG_DT, IP_ADDR, REQUEST, STATUS, USER_AGENT) "
 			+ "VALUES (:date, :ip, :request, :status, :userAgent) ";
 	
@@ -23,7 +26,7 @@ public class WebLogRepository {
 			"	FROM dbo.WEB_LOG " + 
 			"	where LOG_DT between :startDt and :endDt " + 
 			"	group by IP_ADDR " + 
-			"	having count(IP_ADDR) > :threshhold ";
+			"	having count(IP_ADDR) >= :threshhold ";
 	
 	
 	
@@ -36,27 +39,27 @@ public class WebLogRepository {
 	 * @return
 	 */
 	public int[] save(List<WebAccessLogFileRecord> recordList) {
-		
+
 		SqlParameterSource[] batch = SqlParameterSourceUtils.createBatch(recordList.toArray());
 		int[] updateCounts = jdbcTemplate.batchUpdate(INSERT, batch);
 		return updateCounts;
 		
 	}
 	
-	public List<Properties> findIPByDateAndThreshhold(LocalDateTime start, LocalDateTime end, int threshhold) {
+	public List<IpAddrCountRecord> findIPByDateAndThreshhold(LocalDateTime start, LocalDateTime end, int threshhold) {
 		MapSqlParameterSource paramSource = new MapSqlParameterSource();
 		paramSource.addValue("startDt", start);
 		paramSource.addValue("endDt", end);
 		paramSource.addValue("threshhold", threshhold);
 		
-		System.out.println("sql="+SELECT_BY_DATE_AND_THRESHHOLD);
+		LOGGER.info("sql="+SELECT_BY_DATE_AND_THRESHHOLD);
 		
-		System.out.println("params="+paramSource.getValues());
+		LOGGER.info("params="+paramSource.getValues());
 		
 		return jdbcTemplate.query(SELECT_BY_DATE_AND_THRESHHOLD, paramSource, (rs, rowNum) -> {
-				Properties record = new Properties();
-				record.put("ip", rs.getString("IP_ADDR"));
-				record.put("count", rs.getInt("CNT"));
+				IpAddrCountRecord record = new IpAddrCountRecord();
+				record.setIp(rs.getString("IP_ADDR"));
+				record.setCount(rs.getInt("CNT"));
 				
 				return record;
 			}

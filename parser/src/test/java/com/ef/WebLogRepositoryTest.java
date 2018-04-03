@@ -7,7 +7,6 @@ import static org.junit.Assert.assertThat;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,10 +65,10 @@ public class WebLogRepositoryTest {
 		LocalDateTime start = LocalDateTime.of(2017, 1, 1, 0, 0, 20, 0);
 		LocalDateTime end = LocalDateTime.of(2017, 1, 1, 0, 0, 24, 0);
 		int threshhold = 0;
-		List<Properties> actual = repo.findIPByDateAndThreshhold(start, end, threshhold);
+		List<IpAddrCountRecord> actual = repo.findIPByDateAndThreshhold(start, end, threshhold);
 		
 		assertThat(actual.size(), equalTo(2));
-		actual.stream().forEach(r -> assertThat(r.getProperty("ip"), anyOf(equalTo("192.168.234.82"), equalTo("192.168.169.194"))));
+		actual.stream().forEach(r -> assertThat(r.getIp(), anyOf(equalTo("192.168.234.82"), equalTo("192.168.169.194"))));
 		
 	}
 

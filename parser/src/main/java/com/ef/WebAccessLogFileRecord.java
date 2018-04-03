@@ -15,6 +15,7 @@ public class WebAccessLogFileRecord {
 	
 	public WebAccessLogFileRecord(String delimitedLine) {
 		super();
+		System.out.println("instantiating record..."+delimitedLine);
 		String[] lineArray = delimitedLine.split("\\|");
 		this.date = lineArray[0];
 		this.ip = lineArray[1];
