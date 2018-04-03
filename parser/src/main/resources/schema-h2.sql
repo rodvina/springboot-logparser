@@ -10,3 +10,17 @@ CREATE TABLE dbo.WEB_LOG (
 
 )
 ;
+
+CREATE TABLE dbo.WEB_LOG_HRLY_100 (
+	IP_ADDR		varchar(30) NOT NULL,
+	COMMENTS		varchar(200) NOT NULL
+
+)
+;
+
+CREATE TABLE dbo.WEB_LOG_DLY_250 (
+	IP_ADDR		varchar(30) NOT NULL,
+	COMMENTS		varchar(200) NOT NULL
+
+)
+;
