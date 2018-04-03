@@ -19,15 +19,27 @@ public class WebAccessLogFileProcessor implements FileProcessor<WebAccessLogFile
 	
 	@Override
 	public void process(List<WebAccessLogFileRecord> fileRecords, String startDate, String duration, String threshhold) throws Exception {
-		// TODO convert startDate to localDateTime
-		//		calculate endDate based on duration value (hourly=+1, daily=+24)
-		//		convert threshhold to int
-		
-		//		load records to db
+
+		// load records to db
 		this.loadAll(fileRecords);
 		
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss");
 		LocalDateTime start = LocalDateTime.parse(startDate, formatter);
+		LocalDateTime end = this.calculateEndDt(start, duration);
+		
+		// find IPs that meet date and thresshold criteria
+		List<IpAddrCountRecord> results = repo.findIPByDateAndThreshhold(start, end, Integer.parseInt(threshhold));
+		
+		// print results to console
+		results.stream().forEach(r -> LOGGER.info(r.getIp() + ":  " + r.getCount()));
+		
+		//TODO: if hourly 100, store to db
+		
+		//TODO: if daily 250, store to db
+		
+	}
+
+	private LocalDateTime calculateEndDt(LocalDateTime start, String duration) throws Exception {
 		LocalDateTime end;
 		
 		switch (duration) {
@@ -40,14 +52,7 @@ public class WebAccessLogFileProcessor implements FileProcessor<WebAccessLogFile
 			default:
 				throw new Exception("Invalid duration. Use [hourly] or [daily]");
 		}
-		
-		List<IpAddrCountRecord> results = repo.findIPByDateAndThreshhold(start, end, Integer.parseInt(threshhold));
-		
-		results.stream().forEach(r -> LOGGER.info(r.getIp() + ":  " + r.getCount()));
-		
-		
-	
-		
+		return end;
 	}
 	
 	private void loadAll(List<WebAccessLogFileRecord> fileRecords) {
