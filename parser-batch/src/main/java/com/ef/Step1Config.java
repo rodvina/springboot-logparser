@@ -43,7 +43,7 @@ public class Step1Config {
 	}
 	
 	@Bean
-	public ItemReader<WebAccessLogFileRecord> fileReader(@Value("file://${accesslog:classpath:/empty.log}")Resource in) throws IOException {
+	public ItemReader<WebAccessLogFileRecord> fileReader(@Value("${accesslog:classpath:/empty.log}")Resource in) throws IOException {
 		boolean skip = false;
 		if (in.contentLength() == 0) {
 			LOGGER.info("No accesslog specified, no new logs to read...");

@@ -21,7 +21,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 					"startDate=2017-01-01.15:00:00", 
 					"duration=hourly", 
 					"threshhold=100", 
-					"accesslog=/Users/rodneyodvina/Developer/egit_repo/wallethub-test/parser-batch/src/test/resources/access.log"
+					"accesslog=/Users/rodneyodvina/Developer/egit_repo/wallethub-test/parser-batch/src/test/resources/access.log",
+					"spring.datasource.username=weblog",
+					"spring.datasource.password=weblog_ro"
 					})
 public class ParserApplicationTests {
 
