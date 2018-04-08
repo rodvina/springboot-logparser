@@ -5,6 +5,9 @@ SELECT IP_ADDR IP, count(IP_ADDR) CNT
 	group by IP
 	having count(IP_ADDR) > 200;
 
+	
+SELECT * FROM dbo.WEB_LOG_HRLY_100;
+
 select count(*) from WEB_LOG;
 
 delete from WEB_LOG;

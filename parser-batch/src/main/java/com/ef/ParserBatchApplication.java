@@ -1,5 +1,6 @@
 package com.ef;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -44,8 +45,15 @@ public class ParserBatchApplication {
 	@Value("${threshhold}")String threshhold;
 	
 	@Bean
-	public ItemReader<WebAccessLogFileRecord> fileReader(@Value("file://${accesslog}")Resource in) {
-		return new FlatFileItemReaderBuilder<WebAccessLogFileRecord>()
+	public ItemReader<WebAccessLogFileRecord> fileReader(@Value("file://${accesslog:classpath:/empty.log}")Resource in) throws IOException {
+		boolean skip = false;
+		if (in.contentLength() == 0) {
+			LOGGER.info("No accesslog specified, no new logs to read...");
+			skip = true;
+		}
+		
+		//return null to skip fileRead if access log is not specified, nothing to load to db
+		return skip ? () -> {return null;} : new FlatFileItemReaderBuilder<WebAccessLogFileRecord>()
 				.name("weblog-reader")
 				.resource(in)
 				.targetType(WebAccessLogFileRecord.class)
@@ -186,7 +194,6 @@ public class ParserBatchApplication {
 	}
 	
 	public static void main(String[] args) {
-
 		SpringApplication.run(ParserBatchApplication.class, args);
 	}
 }
