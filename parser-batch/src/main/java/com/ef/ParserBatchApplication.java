@@ -2,6 +2,7 @@ package com.ef;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.sql.DataSource;
@@ -19,6 +20,7 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
+import org.springframework.batch.item.support.builder.CompositeItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -86,6 +88,7 @@ public class ParserBatchApplication {
 						IpAddrCountRecord record = new IpAddrCountRecord();
 						record.setIp(rs.getString("IP_ADDR"));
 						record.setCount(rs.getInt("CNT"));
+						record.setComments(duration + " threshhold of " + threshhold + " crossed, appearing " + record.getCount() + " times.");
 						return record;
 					})
 					.build();
@@ -106,6 +109,36 @@ public class ParserBatchApplication {
 	}
 	
 	@Bean
+	public ItemWriter<IpAddrCountRecord> dbThreshholdWriter(DataSource ds) {
+		final String INSERT_HOURLY_100 = "INSERT INTO dbo.WEB_LOG_HRLY_100 (IP_ADDR, COMMENTS) "
+				+ "VALUES (:ip, :comments) ";
+		final String INSERT_DAILY_250 = "INSERT INTO dbo.WEB_LOG_DLY_250 (IP_ADDR, COMMENTS) "
+				+ "VALUES (:ip, :comments) ";
+		
+		String sql = null;
+		if ("hourly".equals(duration) && "100".equals(threshhold)) {
+			sql = INSERT_HOURLY_100;
+		} else if ("daily".equals(duration) && "250".equals(threshhold)) {
+			sql = INSERT_DAILY_250;
+		}
+		
+		return sql == null ? (i) -> {} : new JdbcBatchItemWriterBuilder<IpAddrCountRecord>()
+						.dataSource(ds)
+						.sql(sql)
+						.beanMapped()
+						.build();
+					
+	}
+	
+	@Bean
+	public ItemWriter<IpAddrCountRecord> compositeWriter(ItemWriter<IpAddrCountRecord> consoleWriter, ItemWriter<IpAddrCountRecord> dbThreshholdWriter) {
+		List<ItemWriter<? super IpAddrCountRecord>> writerList = new ArrayList<>();
+		writerList.add(consoleWriter);
+		writerList.add(dbThreshholdWriter);
+		return new CompositeItemWriterBuilder<IpAddrCountRecord>().delegates(writerList).build();
+	}
+	
+	@Bean
 	public Step step1(ItemReader<? extends WebAccessLogFileRecord> fileReader, 
 					ItemWriter<? super WebAccessLogFileRecord> initialDbWriter) {
 		return sbf.get("file-to-db")
@@ -117,11 +150,11 @@ public class ParserBatchApplication {
 
 	@Bean
 	public Step step2(ItemReader<? extends IpAddrCountRecord> dbReader, 
-					ItemWriter<? super IpAddrCountRecord> consoleWriter) {
+					ItemWriter<IpAddrCountRecord> compositeWriter) {
 		return sbf.get("db-query-to-output")
 				  .<IpAddrCountRecord, IpAddrCountRecord>chunk(2000)
 				  .reader(dbReader)
-				  .writer(consoleWriter)
+				  .writer(compositeWriter)
 				  .build();
 	}
 	
