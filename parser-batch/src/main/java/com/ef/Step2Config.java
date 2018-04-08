@@ -1,6 +1,5 @@
 package com.ef;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -10,67 +9,44 @@ import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
-import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.support.builder.CompositeItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.io.Resource;
+import org.springframework.context.annotation.Configuration;
 
-@EnableBatchProcessing
-@SpringBootApplication
-public class ParserBatchApplication {
-	private static final Logger LOGGER = LoggerFactory.getLogger(ParserBatchApplication.class);
+/**
+ * Batch configuration for step2: query the db for ips based on the startDate, duration, and threshhold, write the results to console 
+ * and then to separate table, if applicable.
+ * 
+ * @author rodneyodvina
+ *
+ */
+@Configuration
+public class Step2Config {
+	private static final Logger LOGGER = LoggerFactory.getLogger(Step2Config.class);
 	
 	@Autowired
 	StepBuilderFactory sbf;
-	
-	@Autowired
-	JobBuilderFactory jbf;
 	
 	@Value("${startDate}")String startDate;
 	@Value("${duration}")String duration;
 	@Value("${threshhold}")String threshhold;
 	
 	@Bean
-	public ItemReader<WebAccessLogFileRecord> fileReader(@Value("file://${accesslog:classpath:/empty.log}")Resource in) throws IOException {
-		boolean skip = false;
-		if (in.contentLength() == 0) {
-			LOGGER.info("No accesslog specified, no new logs to read...");
-			skip = true;
-		}
-		
-		//return null to skip fileRead if access log is not specified, nothing to load to db
-		return skip ? () -> {return null;} : new FlatFileItemReaderBuilder<WebAccessLogFileRecord>()
-				.name("weblog-reader")
-				.resource(in)
-				.targetType(WebAccessLogFileRecord.class)
-				.delimited()
-				.delimiter("|")
-				.names(new String[]{"date", "ip", "request", "status", "userAgent"})
-				.build();
-	}
-	
-	@Bean
-	public ItemWriter<WebAccessLogFileRecord> initialDbWriter(DataSource ds) {
-		return new JdbcBatchItemWriterBuilder<WebAccessLogFileRecord>()
-						.dataSource(ds)
-						.sql("INSERT INTO dbo.WEB_LOG (LOG_DT, IP_ADDR, REQUEST, STATUS, USER_AGENT) VALUES (:date, :ip, :request, :status, :userAgent)")
-						.beanMapped()
-						.build();
-					
+	public Step step2(ItemReader<? extends IpAddrCountRecord> dbReader, 
+					ItemWriter<IpAddrCountRecord> compositeWriter) {
+		return sbf.get("db-query-to-output")
+				  .<IpAddrCountRecord, IpAddrCountRecord>chunk(2000)
+				  .reader(dbReader)
+				  .writer(compositeWriter)
+				  .build();
 	}
 	
 	@Bean
@@ -84,7 +60,7 @@ public class ParserBatchApplication {
 		
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss");
 		LocalDateTime start = LocalDateTime.parse(startDate, formatter);
-		LocalDateTime end = Util.calculateEndDt(start, duration);
+		LocalDateTime end = DurationUtil.calculateEndDt(start, duration);
 		Integer threshholdValue = Integer.parseInt(threshhold);
 		
 		return new JdbcCursorItemReaderBuilder<IpAddrCountRecord>()
@@ -146,36 +122,7 @@ public class ParserBatchApplication {
 		return new CompositeItemWriterBuilder<IpAddrCountRecord>().delegates(writerList).build();
 	}
 	
-	@Bean
-	public Step step1(ItemReader<? extends WebAccessLogFileRecord> fileReader, 
-					ItemWriter<? super WebAccessLogFileRecord> initialDbWriter) {
-		return sbf.get("file-to-db")
-				  .<WebAccessLogFileRecord, WebAccessLogFileRecord>chunk(2000)
-				  .reader(fileReader)
-				  .writer(initialDbWriter)
-				  .build();
-	}
-
-	@Bean
-	public Step step2(ItemReader<? extends IpAddrCountRecord> dbReader, 
-					ItemWriter<IpAddrCountRecord> compositeWriter) {
-		return sbf.get("db-query-to-output")
-				  .<IpAddrCountRecord, IpAddrCountRecord>chunk(2000)
-				  .reader(dbReader)
-				  .writer(compositeWriter)
-				  .build();
-	}
-	
-	@Bean
-	public Job job(Step step1, Step step2) {	
-		return jbf.get("parser")
-				  .incrementer(new RunIdIncrementer())
-				  .start(step1)
-				  .next(step2)
-				  .build();
-	}
-	
-	static class Util {
+	static class DurationUtil {
 		public static LocalDateTime calculateEndDt(LocalDateTime start, String duration) throws Exception {
 			LocalDateTime end;
 			
@@ -192,8 +139,5 @@ public class ParserBatchApplication {
 			return end;
 		}
 	}
-	
-	public static void main(String[] args) {
-		SpringApplication.run(ParserBatchApplication.class, args);
-	}
+
 }

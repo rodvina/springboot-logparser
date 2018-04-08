@@ -14,17 +14,16 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-@Ignore
 @RunWith(SpringRunner.class)
 @SpringBootTest
-@Import(ParserBatchApplication.class)
+@Import(ParserApplication.class)
 @TestPropertySource(properties= {
 					"startDate=2017-01-01.15:00:00", 
 					"duration=hourly", 
 					"threshhold=100", 
 					"accesslog=/Users/rodneyodvina/Developer/egit_repo/wallethub-test/parser-batch/src/test/resources/access.log"
 					})
-public class ParserBatchApplicationTests {
+public class ParserApplicationTests {
 
 	@Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
